@@ -17,12 +17,15 @@
 
 <div class="app">
 
-    <!-- ================= Sidebar ================= -->
-            <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">
-    ☰
-</button>
+    <!-- ================= Sidebar Toggle ================= -->
+
+    <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">
+        ☰
+    </button>
 
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <!-- ================= Sidebar ================= -->
 
     <aside id="sidebar" class="sidebar">
 
@@ -30,24 +33,16 @@
 
             <h2>📚 ContextAI</h2>
 
-            <button
-                id="newChatBtn"
-                class="new-chat-btn"
-            >
+            <button id="newChatBtn" class="new-chat-btn">
                 + New Chat
             </button>
 
         </div>
 
-
-        <div
-            id="history"
-            class="history"
-        >
+        <div id="history" class="history">
             <div class="history-empty">
                 No chats yet
             </div>
-
         </div>
 
     </aside>
@@ -58,25 +53,14 @@
 
         <!-- Messages -->
 
-        <div
-            id="messages"
-            class="messages"
-        >
+        <div id="messages" class="messages">
 
             <!-- Welcome Screen -->
 
-            <div
-                id="welcomeScreen"
-                class="welcome"
-            >
+            <div id="welcomeScreen" class="welcome">
 
                 <div class="logo">
-
-                    <img
-                        src="favicon.svg"
-                        alt="ContextAI"
-                    >
-
+                    <img src="favicon.svg" alt="ContextAI">
                 </div>
 
                 <h1>Welcome to ContextAI</h1>
@@ -88,23 +72,10 @@
                 </p>
 
                 <div class="features">
-
-                    <div class="feature">
-                        📄 Multiple PDF Support
-                    </div>
-
-                    <div class="feature">
-                        🔍 Semantic Search
-                    </div>
-
-                    <div class="feature">
-                        📚 Source Citations
-                    </div>
-
-                    <div class="feature">
-                        ⚡ Fast AI Responses
-                    </div>
-
+                    <div class="feature">📄 Multiple PDF Support</div>
+                    <div class="feature">🔍 Semantic Search</div>
+                    <div class="feature">📚 Source Citations</div>
+                    <div class="feature">⚡ Fast AI Responses</div>
                 </div>
 
             </div>
@@ -116,29 +87,13 @@
         <div id="composer" class="composer">
 
             <!-- Selected files -->
-
-            <div
-                id="selectedFiles"
-                class="selected-files"
-            ></div>
+            <div id="selectedFiles" class="selected-files"></div>
 
             <div class="composer-row">
 
                 <!-- Upload -->
-
-                <label
-                    for="pdfs"
-                    class="attach-btn"
-                    title="Upload PDFs"
-                >
-
-                    <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                    >
-
+                <label for="pdfs" class="attach-btn" title="Upload PDFs">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                         <path
                             d="M21.44 11.05L12 20.5a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 115.66 5.66L8.46 18.38a2 2 0 11-2.83-2.83l8.49-8.49"
                             stroke="currentColor"
@@ -146,21 +101,12 @@
                             stroke-linecap="round"
                             stroke-linejoin="round"
                         />
-
                     </svg>
-
                 </label>
 
-                <input
-                    id="pdfs"
-                    type="file"
-                    multiple
-                    accept=".pdf"
-                    hidden
-                >
+                <input id="pdfs" type="file" multiple accept=".pdf" hidden>
 
                 <!-- Question -->
-
                 <textarea
                     id="question"
                     rows="1"
@@ -169,13 +115,7 @@
                 ></textarea>
 
                 <!-- Send -->
-
-                <button
-                    id="sendBtn"
-                    onclick="sendMessage()"
-                    title="Send"
-                    aria-label="Send"
-                >
+                <button id="sendBtn" onclick="sendMessage()" title="Send" aria-label="Send">
                     ➤
                 </button>
 

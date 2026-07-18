@@ -8,98 +8,95 @@ const fileContainer = document.getElementById("selectedFiles");
 let sessionId = null;
 let isNewSession = false;
 
+// --------------------
+// Utilities
+// --------------------
 
-async function createSession() {
+function escapeHTML(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+}
 
+function scrollToBottom() {
+    messages.scrollTop = messages.scrollHeight;
+}
+
+function removeWelcomeScreen() {
+    const welcome = document.getElementById("welcomeScreen");
+    if (welcome) welcome.remove();
+}
+
+// --------------------
+// Sessions
+// --------------------
+
+function createSession() {
     sessionId = null;
     isNewSession = true;
-
     clearChat();
-
 }
 
 async function loadHistory() {
 
-    const response = await fetch(
-        `${API}/sessions`
-    );
-
+    const response = await fetch(`${API}/sessions`);
     const sessions = await response.json();
 
-    const history =
-        document.getElementById("history");
+    const history = document.getElementById("history");
 
-    history.innerHTML = "";
+    let html = "";
 
     sessions
-    .filter(session => session.messages && session.messages.length > 0)
-    .forEach(session => {
+        .filter(session => session.messages && session.messages.length > 0)
+        .forEach(session => {
+            const safeTitle = escapeHTML(session.title);
+            html += `
+            <div
+                class="history-item ${session.id === sessionId ? "active" : ""}"
+                data-id="${session.id}"
+                onclick="openSession('${session.id}')"
+            >
+                <div class="history-title">
+                    ${safeTitle}
+                </div>
 
-    history.innerHTML += `
-    <div
-        class="history-item ${session.id === sessionId ? "active" : ""}"
-        data-id="${session.id}"
-        onclick="openSession('${session.id}')"
-    >
-        <div class="history-title">
-            ${session.title}
-        </div>
+                <div class="history-actions">
+                    <button
+                        onclick="event.stopPropagation(); editSession('${session.id}', this)">
+                        ✏️
+                    </button>
+                    <button
+                        onclick="event.stopPropagation(); deleteSession('${session.id}')">
+                        🗑
+                    </button>
+                </div>
+            </div>
+            `;
+        });
 
-        <div class="history-actions">
-
-            <button
-                onclick="event.stopPropagation(); editSession('${session.id}', this)">
-                ✏️
-            </button>
-
-            <button
-                onclick="event.stopPropagation(); deleteSession('${session.id}')">
-                🗑
-            </button>
-
-        </div>
-    </div>
-    `;
-
-    });
+    history.innerHTML = html;
 }
 
 async function openSession(id) {
 
     sessionId = id;
 
-    const response = await fetch(
-        `${API}/sessions/${id}`
-    );
+    const response = await fetch(`${API}/sessions/${id}`);
+    const session = await response.json();
 
-    const session =
-        await response.json();
+    messages.innerHTML = "";
 
-    messages.innerHTML="";
-
-    if(session.messages.length===0){
+    if (session.messages.length === 0) {
         clearChat();
         return;
     }
+
     session.messages.forEach(message => {
-
-        if(message.role==="user"){
-
-            addUserMessage(
-                message.content
-            );
-
+        if (message.role === "user") {
+            addUserMessage(message.content);
+        } else {
+            addAssistantMessage(message.content, []);
         }
-
-        else{
-
-            addAssistantMessage(
-                message.content,
-                []
-            );
-
-        }
-
     });
 
 }
@@ -108,31 +105,24 @@ window.onload = async () => {
 
     await loadHistory();
 
-    const response = await fetch(
-        `${API}/sessions`
-    );
-
-    const sessions =
-        await response.json();
+    const response = await fetch(`${API}/sessions`);
+    const sessions = await response.json();
 
     if (sessions.length === 0) {
-
         clearChat();
         isNewSession = true;
         sessionId = null;
-
-    }
-    else{
-
+    } else {
         await openSession(sessions[0].id);
-
     }
 
 };
 
-document
-.getElementById("newChatBtn")
-.onclick = createSession;
+document.getElementById("newChatBtn").onclick = createSession;
+
+// --------------------
+// Rename / Edit / Delete
+// --------------------
 
 async function editSession(id, btn) {
 
@@ -140,12 +130,13 @@ async function editSession(id, btn) {
     const title = item.querySelector(".history-title");
     const actions = item.querySelector(".history-actions");
 
-    const oldTitle = title.textContent;
+    const oldTitle = title.textContent.trim();
+    const safeOldTitle = escapeHTML(oldTitle);
 
     title.innerHTML = `
         <input
             class="rename-input"
-            value="${oldTitle}"
+            value="${safeOldTitle}"
         >
     `;
 
@@ -153,7 +144,7 @@ async function editSession(id, btn) {
 
     actions.innerHTML = `
         <button onclick="saveRename('${id}', this)">✔</button>
-        <button onclick="cancelRename(this, '${oldTitle.replace(/'/g, "\\'")}')">✖</button>
+        <button onclick="cancelRename(this, '${safeOldTitle.replace(/'/g, "\\'")}')">✖</button>
     `;
 
     input.focus();
@@ -183,9 +174,7 @@ async function saveRename(id, btn) {
 
     await fetch(`${API}/sessions/${id}`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title })
     });
 
@@ -208,82 +197,56 @@ function cancelRename(btn, oldTitle) {
 
 }
 
+async function deleteSession(id) {
 
-async function deleteSession(id){
-
-    if(!confirm("Are you sure you want to delete this chat?"))
+    if (!confirm("Are you sure you want to delete this chat?"))
         return;
 
-    await fetch(`${API}/sessions/${id}`,{
+    await fetch(`${API}/sessions/${id}`, { method: "DELETE" });
 
-        method:"DELETE"
-
-    });
-
-    if(sessionId === id){
-
+    if (sessionId === id) {
         sessionId = null;
         isNewSession = true;
         clearChat();
-
     }
 
     await loadHistory();
 
 }
 
-function clearChat(){
+// --------------------
+// Chat UI
+// --------------------
+
+function clearChat() {
 
     messages.innerHTML = `
+        <div id="welcomeScreen" class="welcome">
 
-                    <div
-                id="welcomeScreen"
-                class="welcome"
-            >
-
-                <div class="logo">
-
-                    <img
-                        src="favicon.svg"
-                        alt="ContextAI"
-                    >
-
-                </div>
-
-                <h1>Welcome to ContextAI</h1>
-
-                <p>
-                    Upload one or more PDF documents and chat with them using AI.
-                    ContextAI retrieves the most relevant information from your
-                    documents and answers with accurate, source-backed responses.
-                </p>
-
-                <div class="features">
-
-                    <div class="feature">
-                        📄 Multiple PDF Support
-                    </div>
-
-                    <div class="feature">
-                        🔍 Semantic Search
-                    </div>
-
-                    <div class="feature">
-                        📚 Source Citations
-                    </div>
-
-                    <div class="feature">
-                        ⚡ Fast AI Responses
-                    </div>
-
-                </div>
-
+            <div class="logo">
+                <img src="favicon.svg" alt="ContextAI">
             </div>
 
+            <h1>Welcome to ContextAI</h1>
 
+            <p>
+                Upload one or more PDF documents and chat with them using AI.
+                ContextAI retrieves the most relevant information from your
+                documents and answers with accurate, source-backed responses.
+            </p>
+
+            <div class="features">
+                <div class="feature">📄 Multiple PDF Support</div>
+                <div class="feature">🔍 Semantic Search</div>
+                <div class="feature">📚 Source Citations</div>
+                <div class="feature">⚡ Fast AI Responses</div>
+            </div>
+
+        </div>
     `;
 
 }
+
 // --------------------
 // Selected Files
 // --------------------
@@ -293,10 +256,9 @@ filesInput.onchange = () => {
     fileContainer.innerHTML = "";
 
     for (const file of filesInput.files) {
-
         fileContainer.innerHTML += `
             <div class="file-chip">
-                📄 ${file.name}
+                📄 ${escapeHTML(file.name)}
             </div>
         `;
     }
@@ -316,8 +278,8 @@ async function sendMessage() {
         });
 
         const session = await response.json();
-        
-        sessionId = session;
+
+        sessionId = session.id;
         isNewSession = false;
 
         await loadHistory();
@@ -328,12 +290,13 @@ async function sendMessage() {
 
     if (!question) return;
     removeWelcomeScreen();
-    
+
     sendBtn.disabled = true;
 
     addUserMessage(question);
 
     questionBox.value = "";
+    autoResizeTextarea();
 
     showLoader("Uploading documents...");
 
@@ -355,10 +318,7 @@ async function sendMessage() {
 
             const upload = await fetch(
                 `${API}/upload/${sessionId}`,
-                {
-                    method: "POST",
-                    body: form
-                }
+                { method: "POST", body: form }
             );
 
             if (!upload.ok)
@@ -368,15 +328,11 @@ async function sendMessage() {
 
             const index = await fetch(
                 `${API}/index/${sessionId}`,
-                {
-                    method: "POST"
-                }
+                { method: "POST" }
             );
 
             if (!index.ok)
                 throw new Error("Failed to build index.");
-
-            // Clear selected files
 
             filesInput.value = "";
             fileContainer.innerHTML = "";
@@ -393,14 +349,8 @@ async function sendMessage() {
             `${API}/chat/${sessionId}`,
             {
                 method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    question
-                })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question })
             }
         );
 
@@ -413,26 +363,16 @@ async function sendMessage() {
 
         hideLoader();
 
-        addAssistantMessage(
-            data.answer,
-            data.sources
-        );
+        addAssistantMessage(data.answer, data.sources);
 
         await loadHistory();
-    }
 
-    catch (err) {
+    } catch (err) {
 
         hideLoader();
+        addAssistantMessage(`❌ ${err.message}`, []);
 
-        addAssistantMessage(
-            `❌ ${err.message}`,
-            []
-        );
-
-    }
-
-    finally {
+    } finally {
 
         sendBtn.disabled = false;
 
@@ -444,53 +384,39 @@ async function sendMessage() {
 // Chat Messages
 // --------------------
 
-function addUserMessage(text){
+function addUserMessage(text) {
 
     const div = document.createElement("div");
-
     div.className = "user";
     div.textContent = text;
 
     messages.appendChild(div);
-
     scrollToBottom();
 
 }
+
 function addAssistantMessage(answer, sources) {
 
-    let html = `
-        <div class="assistant markdown-body">
+    let html = `<div class="assistant markdown-body">${marked.parse(answer)}`;
 
-        ${marked.parse(answer)}
-        `;
+    if (sources.length) {
+        html += `<div class="sources">`;
 
-        if(sources.length){
-
-            html += `<div class="sources">`;
-
-            for (const source of sources) {
-
-                html += `
-
-                    <div>
-
-                        📄 <strong>${source.source}</strong>
-
-                        • Page ${source.page}
-
+        for (const source of sources) {
+            html += `
+                <div>
+                    📄 <strong>${escapeHTML(source.source)}</strong>
+                    • Page ${source.page}
                 </div>
-
             `;
-
         }
 
-        html+="</div>";
+        html += "</div>";
     }
 
     html += "</div>";
 
-    messages.innerHTML += html;
-
+    messages.insertAdjacentHTML("beforeend", html);
     scrollToBottom();
 
 }
@@ -501,100 +427,72 @@ function addAssistantMessage(answer, sources) {
 
 function showLoader(text) {
 
-    messages.innerHTML += `
-
-        <div
-            class="assistant"
-            id="loader"
-        >
-
-            <div id="loaderText">
-
-                ${text}
-
-            </div>
-
+    const html = `
+        <div class="assistant" id="loader">
+            <div id="loaderText">${escapeHTML(text)}</div>
             <div class="loader">
-
                 <span></span>
-
                 <span></span>
-
                 <span></span>
-
             </div>
-
         </div>
-
     `;
 
+    messages.insertAdjacentHTML("beforeend", html);
     scrollToBottom();
 
 }
 
 function updateLoader(text) {
-
-    const loaderText =
-        document.getElementById("loaderText");
-
-    if (loaderText)
-        loaderText.textContent = text;
-
+    const loaderText = document.getElementById("loaderText");
+    if (loaderText) loaderText.textContent = text;
 }
 
 function hideLoader() {
-
-    document
-        .getElementById("loader")
-        ?.remove();
-
+    document.getElementById("loader")?.remove();
 }
 
 // --------------------
-// Utilities
+// Sidebar Toggle + Overlay
 // --------------------
-
-function scrollToBottom() {
-
-    messages.scrollTop =
-        messages.scrollHeight;
-
-}
-
-function removeWelcomeScreen(){
-
-    const welcome =
-        document.getElementById("welcomeScreen");
-
-    if(welcome){
-
-        welcome.remove();
-
-    }
-
-}
 
 const sidebar = document.getElementById("sidebar");
-
+const overlay = document.getElementById("sidebarOverlay");
 const toggle = document.getElementById("sidebarToggle");
+
+function closeSidebar() {
+    sidebar.classList.remove("show");
+    overlay.classList.remove("show");
+}
 
 toggle.onclick = () => {
 
-    if(window.innerWidth <= 900){
-
-        sidebar.classList.toggle("show");
-
-    }
-
-    else{
-
-        sidebar.classList.toggle("hidden");
-
-        document
-            .querySelector(".app")
-            .classList.toggle("sidebar-hidden");
-
+    if (window.innerWidth <= 900) {
+        const isOpen = sidebar.classList.toggle("show");
+        overlay.classList.toggle("show", isOpen);
+    } else {
+        sidebar.classList.toggle("collapsed");
+        document.querySelector(".app").classList.toggle("sidebar-collapsed");
     }
 
 };
 
+overlay.onclick = closeSidebar;
+
+// --------------------
+// Textarea Auto-Resize + Enter-to-Send
+// --------------------
+
+function autoResizeTextarea() {
+    questionBox.style.height = "auto";
+    questionBox.style.height = Math.min(questionBox.scrollHeight, 180) + "px";
+}
+
+questionBox.addEventListener("input", autoResizeTextarea);
+
+questionBox.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});

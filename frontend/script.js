@@ -6,23 +6,15 @@ const questionBox = document.getElementById("question");
 const sendBtn = document.getElementById("sendBtn");
 const fileContainer = document.getElementById("selectedFiles");
 let sessionId = null;
+let isNewSession = false;
+
 
 async function createSession() {
 
-    const response = await fetch(
-        `${API}/sessions`,
-        {
-            method: "POST"
-        }
-    );
-
-    const session = await response.json();
-
-    sessionId = session.id;
+    sessionId = null;
+    isNewSession = true;
 
     clearChat();
-    await loadHistory();
-
 
 }
 
@@ -39,19 +31,37 @@ async function loadHistory() {
 
     history.innerHTML = "";
 
-    sessions.forEach(session => {
+    sessions
+    .filter(session => session.messages && session.messages.length > 0)
+    .forEach(session => {
 
-        history.innerHTML += `
-            <div
-                class="history-item ${session.id===sessionId ? "active" : ""}"
-                onclick="openSession('${session.id}')"
-            >
-                ${session.title}
-            </div>
-            `;
+    history.innerHTML += `
+    <div
+        class="history-item ${session.id === sessionId ? "active" : ""}"
+        data-id="${session.id}"
+        onclick="openSession('${session.id}')"
+    >
+        <div class="history-title">
+            ${session.title}
+        </div>
+
+        <div class="history-actions">
+
+            <button
+                onclick="event.stopPropagation(); editSession('${session.id}', this)">
+                ✏️
+            </button>
+
+            <button
+                onclick="event.stopPropagation(); deleteSession('${session.id}')">
+                🗑
+            </button>
+
+        </div>
+    </div>
+    `;
 
     });
-
 }
 
 async function openSession(id) {
@@ -105,17 +115,16 @@ window.onload = async () => {
     const sessions =
         await response.json();
 
-    if(sessions.length===0){
+    if (sessions.length === 0) {
 
-        await createSession();
+        clearChat();
+        isNewSession = true;
+        sessionId = null;
 
     }
-
     else{
 
-        await openSession(
-            sessions[0].id
-        );
+        await openSession(sessions[0].id);
 
     }
 
@@ -125,45 +134,152 @@ document
 .getElementById("newChatBtn")
 .onclick = createSession;
 
+async function editSession(id, btn) {
+
+    const item = btn.closest(".history-item");
+    const title = item.querySelector(".history-title");
+    const actions = item.querySelector(".history-actions");
+
+    const oldTitle = title.textContent;
+
+    title.innerHTML = `
+        <input
+            class="rename-input"
+            value="${oldTitle}"
+        >
+    `;
+
+    const input = title.querySelector("input");
+
+    actions.innerHTML = `
+        <button onclick="saveRename('${id}', this)">✔</button>
+        <button onclick="cancelRename(this, '${oldTitle.replace(/'/g, "\\'")}')">✖</button>
+    `;
+
+    input.focus();
+    input.select();
+
+    input.onkeydown = e => {
+        if (e.key === "Enter")
+            saveRename(id, actions.children[0]);
+
+        if (e.key === "Escape")
+            cancelRename(actions.children[1], oldTitle);
+    };
+
+}
+
+async function saveRename(id, btn) {
+
+    const item = btn.closest(".history-item");
+    const input = item.querySelector(".rename-input");
+
+    const title = input.value.trim();
+
+    if (!title) {
+        cancelRename(btn, "");
+        return;
+    }
+
+    await fetch(`${API}/sessions/${id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ title })
+    });
+
+    await loadHistory();
+
+}
+
+function cancelRename(btn, oldTitle) {
+
+    const item = btn.closest(".history-item");
+
+    item.querySelector(".history-title").textContent = oldTitle;
+
+    const id = item.dataset.id;
+
+    item.querySelector(".history-actions").innerHTML = `
+        <button onclick="editSession('${id}', this)">✏️</button>
+        <button onclick="deleteSession('${id}')">🗑</button>
+    `;
+
+}
+
+
+async function deleteSession(id){
+
+    if(!confirm("Are you sure you want to delete this chat?"))
+        return;
+
+    await fetch(`${API}/sessions/${id}`,{
+
+        method:"DELETE"
+
+    });
+
+    if(sessionId === id){
+
+        sessionId = null;
+        isNewSession = true;
+        clearChat();
+
+    }
+
+    await loadHistory();
+
+}
+
 function clearChat(){
 
     messages.innerHTML = `
 
-        <div id="welcomeScreen" class="welcome">
+                    <div
+                id="welcomeScreen"
+                class="welcome"
+            >
 
-            <div class="logo">
-                📚
+                <div class="logo">
+
+                    <img
+                        src="favicon.svg"
+                        alt="ContextAI"
+                    >
+
+                </div>
+
+                <h1>Welcome to ContextAI</h1>
+
+                <p>
+                    Upload one or more PDF documents and chat with them using AI.
+                    ContextAI retrieves the most relevant information from your
+                    documents and answers with accurate, source-backed responses.
+                </p>
+
+                <div class="features">
+
+                    <div class="feature">
+                        📄 Multiple PDF Support
+                    </div>
+
+                    <div class="feature">
+                        🔍 Semantic Search
+                    </div>
+
+                    <div class="feature">
+                        📚 Source Citations
+                    </div>
+
+                    <div class="feature">
+                        ⚡ Fast AI Responses
+                    </div>
+
+                </div>
+
             </div>
 
-            <h1>Welcome to ContextAI</h1>
-
-            <p>
-                Chat with your own PDF documents using AI.
-                Upload one or more PDFs, ask questions in natural language,
-                and receive answers with references to the original pages.
-            </p>
-
-            <div class="features">
-
-                <div class="feature">
-                    📄 Upload multiple PDFs
-                </div>
-
-                <div class="feature">
-                    🔍 AI-powered document search
-                </div>
-
-                <div class="feature">
-                    📚 Source citations
-                </div>
-
-                <div class="feature">
-                    ⚡ Fast semantic retrieval
-                </div>
-
-            </div>
-
-        </div>
 
     `;
 
@@ -192,6 +308,21 @@ filesInput.onchange = () => {
 // --------------------
 
 async function sendMessage() {
+
+    if (isNewSession || sessionId === null) {
+
+        const response = await fetch(`${API}/sessions`, {
+            method: "POST"
+        });
+
+        const session = await response.json();
+        
+        sessionId = session;
+        isNewSession = false;
+
+        await loadHistory();
+
+    }
 
     const question = questionBox.value.trim();
 
@@ -287,6 +418,7 @@ async function sendMessage() {
             data.sources
         );
 
+        await loadHistory();
     }
 
     catch (err) {
@@ -312,28 +444,18 @@ async function sendMessage() {
 // Chat Messages
 // --------------------
 
-function addUserMessage(text) {
+function addUserMessage(text){
 
-    const div=document.createElement("div");
-    div.className="user";
-    div.textContent=text;
+    const div = document.createElement("div");
+
+    div.className = "user";
+    div.textContent = text;
+
     messages.appendChild(div);
-    
-    messages.innerHTML += `
-
-        <div class="user">
-
-            ${text}
-
-        </div>
-
-    `;
 
     scrollToBottom();
-    
 
 }
-
 function addAssistantMessage(answer, sources) {
 
     let html = `
@@ -451,3 +573,28 @@ function removeWelcomeScreen(){
     }
 
 }
+
+const sidebar = document.getElementById("sidebar");
+
+const toggle = document.getElementById("sidebarToggle");
+
+toggle.onclick = () => {
+
+    if(window.innerWidth <= 900){
+
+        sidebar.classList.toggle("show");
+
+    }
+
+    else{
+
+        sidebar.classList.toggle("hidden");
+
+        document
+            .querySelector(".app")
+            .classList.toggle("sidebar-hidden");
+
+    }
+
+};
+

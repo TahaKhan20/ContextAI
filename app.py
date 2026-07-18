@@ -2,9 +2,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List
 import shutil
-
+from rag.session_manager import SessionManager
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
+from schemas.rename import RenameRequest
 
 from schemas.chat import ChatRequest
 
@@ -30,8 +32,6 @@ METADATA_PATH = "storage/metadata.pkl"
 # ==========================
 # Global Objects
 # ==========================
-
-from rag.session_manager import SessionManager
 
 embedder = Embedder()
 session_manager = SessionManager()
@@ -205,16 +205,12 @@ def list_sessions():
 @app.get("/sessions/{session_id}")
 def get_session(session_id: str):
 
-    session = session_manager.load_session(session_id)
+    history = session_manager.get_history(session_id)
 
-    if session is None:
-
-        raise HTTPException(
-            status_code=404,
-            detail="Session not found."
-        )
-
-    return session
+    return {
+        "session_id": session_id,
+        "messages": history
+    }
 
 @app.delete("/sessions/{session_id}")
 def delete_session(session_id: str):
@@ -226,8 +222,6 @@ def delete_session(session_id: str):
     return {
         "status": "deleted"
     }
-
-from schemas.rename import RenameRequest
 
 
 @app.put("/sessions/{session_id}")
@@ -260,9 +254,6 @@ def chat(
     request: ChatRequest
 ):
 
-    messages = session_manager.get_messages(
-        session_id
-    )
 
     store = get_store(session_id)
 
@@ -278,9 +269,13 @@ def chat(
         request.question
     )
 
+
+    messages = session_manager.get_history(
+        session_id
+    )
     standalone_question = rewrite_query(
         request.question,
-        messages.get_messages()
+        messages
     )
 
     query = embedder.embed_text(

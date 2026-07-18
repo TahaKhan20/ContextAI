@@ -1,0 +1,80 @@
+# =========================
+# API Backend
+# =========================
+
+fastapi
+uvicorn[standard]
+python-multipart
+
+
+# =========================
+# Data Validation
+# =========================
+
+pydantic
+
+
+# =========================
+# PDF Processing
+# =========================
+
+pypdf
+PyMuPDF
+
+
+# =========================
+# Text Processing
+# =========================
+
+numpy
+tqdm
+
+
+# =========================
+# Embeddings
+# =========================
+
+sentence-transformers
+torch
+
+
+# =========================
+# Vector Database
+# =========================
+
+faiss-cpu
+
+
+# =========================
+# OpenAI LLM
+# =========================
+
+openai
+
+
+# =========================
+# Environment Variables
+# =========================
+
+python-dotenv
+
+
+# =========================
+# Optional: Better Token Handling
+# =========================
+
+tiktoken
+
+
+# =========================
+# HTTP / Async Utilities
+# =========================
+
+httpx
+
+
+# =========================
+# Production Server
+# =========================
+
+gunicorn

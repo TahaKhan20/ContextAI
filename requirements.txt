@@ -23,6 +23,29 @@ PyMuPDF
 
 
 # =========================
+# Word Document Processing (.docx)
+# =========================
+
+python-docx
+
+
+# =========================
+# Excel Processing (.xlsx / .xls)
+# =========================
+
+openpyxl
+pandas
+xlrd
+
+
+# =========================
+# PowerPoint Processing (.pptx)
+# =========================
+
+python-pptx
+
+
+# =========================
 # Text Processing
 # =========================
 

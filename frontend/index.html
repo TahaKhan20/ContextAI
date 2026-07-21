@@ -66,13 +66,14 @@
                 <h1>Welcome to ContextAI</h1>
 
                 <p>
-                    Upload one or more PDF documents and chat with them using AI.
+                    Upload PDFs, Word documents, Excel spreadsheets, PowerPoint
+                    presentations, CSVs, or plain text files and chat with them using AI.
                     ContextAI retrieves the most relevant information from your
                     documents and answers with accurate, source-backed responses.
                 </p>
 
                 <div class="features">
-                    <div class="feature">📄 Multiple PDF Support</div>
+                    <div class="feature">📄 PDF, Word, Excel &amp; More</div>
                     <div class="feature">🔍 Semantic Search</div>
                     <div class="feature">📚 Source Citations</div>
                     <div class="feature">⚡ Fast AI Responses</div>
@@ -92,7 +93,7 @@
             <div class="composer-row">
 
                 <!-- Upload -->
-                <label for="pdfs" class="attach-btn" title="Upload PDFs">
+                <label for="pdfs" class="attach-btn" title="Upload Documents">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                         <path
                             d="M21.44 11.05L12 20.5a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 115.66 5.66L8.46 18.38a2 2 0 11-2.83-2.83l8.49-8.49"
@@ -104,7 +105,7 @@
                     </svg>
                 </label>
 
-                <input id="pdfs" type="file" multiple accept=".pdf" hidden>
+                <input id="pdfs" type="file" multiple accept=".pdf,.docx,.xlsx,.xls,.txt,.csv,.pptx" hidden>
 
                 <!-- Question -->
                 <textarea

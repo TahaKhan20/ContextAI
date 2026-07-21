@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from rag.loader import load_pdf
+from rag.loader import load_document, SUPPORTED_EXTENSIONS
 from rag.chunker import chunk_pages
 from rag.embedder import Embedder
 from rag.vector_store import VectorStore
@@ -13,39 +13,35 @@ def build_index(
     metadata_path="storage/metadata.pkl"
 ):
     all_chunks = []
+    upload_path = Path(upload_dir)
 
-    for pdf in Path(upload_dir).glob("*.pdf"):
+    for file in upload_path.iterdir():
 
-        print(f"Indexing {pdf.name}")
+        if file.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            continue
 
-        pages = load_pdf(str(pdf))
+        print(f"Indexing {file.name}")
+
+        try:
+            pages = load_document(str(file))
+        except Exception as e:
+            print(f"Skipping {file.name}: {e}")
+            continue
 
         chunks = chunk_pages(pages)
-
         all_chunks.extend(chunks)
 
     if not all_chunks:
-        raise ValueError("No PDF files found.")
+        raise ValueError("No supported documents found.")
 
-    texts = [
-        chunk["text"]
-        for chunk in all_chunks
-    ]
+    texts = [chunk["text"] for chunk in all_chunks]
 
     embeddings = embedder.embed_documents(texts)
 
-    store = VectorStore(
-        embeddings.shape[1]
-    )
+    store = VectorStore(embeddings.shape[1])
 
-    store.add(
-        embeddings,
-        all_chunks
-    )
+    store.add(embeddings, all_chunks)
 
-    store.save(
-        index_path,
-        metadata_path
-    )
+    store.save(index_path, metadata_path)
 
     return len(all_chunks)

@@ -1,6 +1,6 @@
 # ContextAI
 
-A full-stack **Retrieval-Augmented Generation (RAG)** application that lets you upload PDF documents and chat with them using AI. ContextAI extracts text from your PDFs, builds a semantic search index, and answers questions with accurate, source-backed responses.
+A full-stack **Retrieval-Augmented Generation (RAG)** application that lets you upload documents and chat with them using AI. ContextAI extracts text from your files, builds a semantic search index, and answers questions with accurate, source-backed responses.
 
 ContextAI website: https://context-ai.mohammadtahakhan20.workers.dev/
 
@@ -13,12 +13,25 @@ ContextAI website: https://context-ai.mohammadtahakhan20.workers.dev/
 
 ## Features
 
-- **Multi-PDF Upload** — Upload one or more PDF documents per session
+- **Multi-Format Upload** — Upload PDFs, Word documents, Excel spreadsheets, PowerPoint presentations, CSVs, and plain text files
 - **Semantic Search** — FAISS-powered vector similarity search using sentence-transformers
 - **Conversational Memory** — Chat history with context-aware query rewriting
 - **Source Citations** — Every answer references the document name and page number
 - **Session Management** — Create, rename, and delete independent chat sessions
 - **Dark-themed UI** — Responsive ChatGPT-style frontend
+
+---
+
+## Supported File Types
+
+| Format | Extension(s) | Library |
+| --- | --- | --- |
+| PDF | `.pdf` | `pypdf` |
+| Word | `.docx` | `python-docx` |
+| Excel | `.xlsx`, `.xls` | `pandas`, `openpyxl`, `xlrd` |
+| PowerPoint | `.pptx` | `python-pptx` |
+| CSV | `.csv` | `pandas` |
+| Plain Text | `.txt` | built-in |
 
 ---
 
@@ -65,7 +78,7 @@ ContextAI/
 ├── .gitignore
 │
 ├── rag/                    # RAG pipeline modules
-│   ├── loader.py           # PDF text extraction (pypdf)
+│   ├── loader.py           # Document loader — PDF, DOCX, XLSX, XLS, PPTX, CSV, TXT
 │   ├── cleaner.py          # Text cleaning & normalization
 │   ├── chunker.py          # Sliding-window text chunking
 │   ├── embedder.py         # Sentence-transformer embeddings
@@ -87,7 +100,7 @@ ContextAI/
 │   ├── script.js
 │   └── favicon.svg
 │
-├── uploads/                # Uploaded PDFs (per session)
+├── uploads/                # Uploaded documents (per session)
 ├── storage/                # FAISS indexes & metadata (per session)
 └── sessions/               # Session data (sessions.json)
 ```
@@ -162,7 +175,7 @@ Then visit `http://localhost:5500`.
 | `GET` | `/sessions/{id}` | Get session with message history |
 | `PUT` | `/sessions/{id}` | Rename a session |
 | `DELETE` | `/sessions/{id}` | Delete a session and its data |
-| `POST` | `/upload/{id}` | Upload PDF files to a session |
+| `POST` | `/upload/{id}` | Upload documents to a session |
 | `POST` | `/index/{id}` | Build the FAISS index for a session |
 | `POST` | `/chat/{id}` | Ask a question against the indexed documents |
 
@@ -178,9 +191,9 @@ curl -X POST http://127.0.0.1:8000/chat/SESSION_ID \
 
 ## How It Works (Step by Step)
 
-### 1. PDF Upload & Text Extraction
+### 1. Document Upload & Text Extraction
 
-When you upload PDFs, the backend saves them to `uploads/{session_id}/`. The **loader** (`rag/loader.py`) uses `pypdf` to extract text page by page, and the **cleaner** (`rag/cleaner.py`) normalizes whitespace and removes noise.
+When you upload files, the backend saves them to `uploads/{session_id}/`. The **loader** (`rag/loader.py`) dispatches to a format-specific extractor based on file extension — `pypdf` for PDFs, `python-docx` for Word, `pandas` for Excel/CSV, `python-pptx` for PowerPoint, and the built-in `open()` for plain text. The **cleaner** (`rag/cleaner.py`) then normalizes whitespace and removes noise.
 
 ### 2. Chunking
 
@@ -190,7 +203,7 @@ The **chunker** (`rag/chunker.py`) splits each page into overlapping text chunks
 - **Overlap:** 150 characters
 - **Minimum chunk length:** 100 characters
 
-Each chunk retains its source file name and page number for citations.
+Each chunk retains its source file name and page number (or sheet name for Excel) for citations.
 
 ### 3. Embedding & Indexing
 
@@ -254,9 +267,9 @@ Edit the `k` parameter in `app.py` → `chat()`:
 results = store.search(query, k=10)  # Retrieve more chunks
 ```
 
-### Add Support for Other File Types
+### Add Support for New File Types
 
-Extend `rag/loader.py` to handle `.docx`, `.txt`, or other formats by adding new loader functions and calling them based on file extension.
+Add a loader function in `rag/loader.py`, register the extension in `SUPPORTED_EXTENSIONS`, and add a branch in `load_document()`. No other files need to change.
 
 ### Use a Different Vector Database
 
@@ -304,7 +317,6 @@ OPENAI_API_KEY=sk-...
 - **No streaming** — Responses are returned in full (streaming support is scaffolded but not active)
 - **JSON file storage** — Sessions are stored in a flat JSON file; not suitable for high-concurrency production use
 - **In-memory FAISS** — Indexes are loaded into RAM; large document sets may require a persistent vector database
-- **PDF-only** — Currently only supports PDF documents
 
 ---
 

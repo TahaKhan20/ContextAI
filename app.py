@@ -16,6 +16,7 @@ from rag.vector_store import VectorStore
 from rag.prompt import build_prompt
 from rag.llm import ask_llm
 from rag.query_rewriter import rewrite_query
+from rag.loader import SUPPORTED_EXTENSIONS
 
 
 # ==========================
@@ -85,21 +86,25 @@ def home():
 
 
 # ==========================
-# Upload PDFs
+# Upload Documents
 # ==========================
 
 @app.post("/upload/{session_id}")
-async def upload_pdfs(
+async def upload_documents(
     session_id: str,
     files: List[UploadFile] = File(...)
 ):
 
-    # Validate all files first
+    # Validate all files by extension
     for file in files:
-        if file.content_type != "application/pdf":
+        ext = Path(file.filename).suffix.lower()
+        if ext not in SUPPORTED_EXTENSIONS:
             raise HTTPException(
                 status_code=400,
-                detail=f"{file.filename} is not a PDF."
+                detail=(
+                    f"'{file.filename}' has an unsupported format. "
+                    f"Accepted types: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
+                )
             )
 
     session_upload_dir = Path("uploads") / session_id

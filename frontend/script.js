@@ -230,13 +230,14 @@ function clearChat() {
             <h1>Welcome to ContextAI</h1>
 
             <p>
-                Upload one or more PDF documents and chat with them using AI.
+                Upload PDFs, Word documents, Excel spreadsheets, PowerPoint
+                presentations, CSVs, or plain text files and chat with them using AI.
                 ContextAI retrieves the most relevant information from your
                 documents and answers with accurate, source-backed responses.
             </p>
 
             <div class="features">
-                <div class="feature">📄 Multiple PDF Support</div>
+                <div class="feature">📄 PDF, Word, Excel &amp; More</div>
                 <div class="feature">🔍 Semantic Search</div>
                 <div class="feature">📚 Source Citations</div>
                 <div class="feature">⚡ Fast AI Responses</div>
@@ -251,6 +252,21 @@ function clearChat() {
 // Selected Files
 // --------------------
 
+const FILE_ICONS = {
+    ".pdf":  "📄",
+    ".docx": "📝",
+    ".xlsx": "📊",
+    ".xls":  "📊",
+    ".csv":  "📋",
+    ".txt":  "📃",
+    ".pptx": "📑",
+};
+
+function getFileIcon(filename) {
+    const ext = filename.slice(filename.lastIndexOf(".")).toLowerCase();
+    return FILE_ICONS[ext] || "📎";
+}
+
 filesInput.onchange = () => {
 
     fileContainer.innerHTML = "";
@@ -258,7 +274,7 @@ filesInput.onchange = () => {
     for (const file of filesInput.files) {
         fileContainer.innerHTML += `
             <div class="file-chip">
-                📄 ${escapeHTML(file.name)}
+                ${getFileIcon(file.name)} ${escapeHTML(file.name)}
             </div>
         `;
     }
@@ -322,7 +338,7 @@ async function sendMessage() {
             );
 
             if (!upload.ok)
-                throw new Error("Failed to upload PDFs.");
+                throw new Error("Failed to upload documents.");
 
             updateLoader("Building search index...");
 
